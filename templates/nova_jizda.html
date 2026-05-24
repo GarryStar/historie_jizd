@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nová jízda</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Nová jízda</h1>
+
+      <div id="startPanel">
+        <label>Vozidlo</label>
+        <select id="vehicle_id"></select>
+      
+        <label>Datum startu</label>
+        <input id="start_date" type="date">
+      
+        <label>Čas startu</label>
+        <input id="start_time" type="time">
+      
+        <label>Město startu</label>
+        <input id="start_place" placeholder="Praha">
+
+        <label>Účel jízdy</label>
+        <input id="purpose" placeholder="Práce / Soukromé">
+      
+        <label>Stav tachometru při startu</label>
+        <input id="odometer_start" type="number" inputmode="numeric">
+      
+        <button id="startTrip">Start</button>
+      </div>
+    
+      <div id="runningPanel" style="display:none">
+        <p class="muted">Jízda běží…</p>
+
+        <div class="item">
+          <strong id="runningVehicle"></strong><br>
+        
+          <span class="muted">
+            <span id="runningDate"></span>
+            ·
+            <span id="runningTime"></span>
+          </span><br>
+        
+          <span class="muted">
+            Start:
+            <span id="runningPlace"></span>
+          </span><br>
+        
+          <span class="muted">
+            Účel:
+            <span id="runningPurpose"></span>
+          </span>
+        </div>
+      
+        <button id="stopTrip">Stop</button>
+        <button id="cancelRunningTrip" class="danger">
+          Zrušit jízdu
+        </button>
+      </div>
+    
+      <div id="stopPanel" style="display:none">
+        <label>Datum konce</label>
+        <input id="end_date" type="date">
+      
+        <label>Čas konce</label>
+        <input id="end_time" type="time">
+      
+        <label>Město konce</label>
+        <input id="end_place" placeholder="Brno">
+      
+        <label>Stav tachometru při konci</label>
+        <input id="odometer_end" type="number" inputmode="numeric">
+      
+        <p class="muted">Ujeto: <strong id="distance">0</strong> km</p>
+      
+        <button id="saveTrip">Uložit</button>
+        <button id="cancelTrip" type="button" class="warning">
+          Zpět do jízdy
+        </button>
+      
+        <p id="message" class="muted"></p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav">
+    <a href="/dashboard">Domů</a>
+    <a href="/nova-jizda" class="active">Jízda</a>
+    <a href="/vozidla">Auta</a>
+    <a href="/historie">Historie</a>
+  </nav>
+
+  <script src="/static/app.js"></script>
+  <script>
+    const vehicleSelect = document.getElementById("vehicle_id");
+    const startKm = document.getElementById("odometer_start");
+    const endKm = document.getElementById("odometer_end");
+    const distance = document.getElementById("distance");
+      
+    let rozjetaJizda = null;
+      
+    function aktualniCas() {
+      return new Date().toTimeString().slice(0, 5);
+    }
+  
+    function prepocitej() {
+      const s = parseInt(startKm.value || 0);
+      const e = parseInt(endKm.value || 0);
+      distance.textContent = e >= s ? e - s : 0;
+    }
+  
+    async function loadVehicles() {
+      const vehicles = await api("/api/vehicles", { headers: authHeaders() });
+    
+      vehicleSelect.innerHTML = "";
+    
+      if (!vehicles.length) {
+        vehicleSelect.innerHTML = "<option value=''>Nejdřív přidej vozidlo</option>";
+        return;
+      }
+    
+      vehicles.forEach(v => {
+        const option = document.createElement("option");
+        option.value = v.id;
+        option.textContent = `${v.name} (${v.current_odometer || 0} km)`;
+        option.dataset.km = v.current_odometer || 0;
+        vehicleSelect.appendChild(option);
+      });
+    
+      nastavKm();
+    }
+  
+    function nastavKm() {
+      const selected = vehicleSelect.options[vehicleSelect.selectedIndex];
+      const km = selected?.dataset?.km || 0;
+      startKm.value = km;
+    }
+  
+    vehicleSelect.onchange = nastavKm;
+    endKm.oninput = prepocitej;
+  
+    document.getElementById("start_date").value = dnesISO();
+    document.getElementById("start_time").value = aktualniCas();
+  
+    document.getElementById("startTrip").onclick = () => {
+      rozjetaJizda = {
+        vehicle_id: vehicleSelect.value,
+        vehicle_name: vehicleSelect.options[vehicleSelect.selectedIndex].textContent,
+
+        start_date: document.getElementById("start_date").value,
+        start_time: document.getElementById("start_time").value,
+
+        start_place: document.getElementById("start_place").value,
+
+        purpose: document.getElementById("purpose").value,
+
+        odometer_start: startKm.value
+      };
+      saveLocal("activeTrip", rozjetaJizda);
+    
+      document.getElementById("runningVehicle").textContent = rozjetaJizda.vehicle_name;
+
+      document.getElementById("runningDate").textContent = rozjetaJizda.start_date;
+
+      document.getElementById("runningTime").textContent = rozjetaJizda.start_time;
+
+      document.getElementById("runningPlace").textContent =
+        rozjetaJizda.start_place || "Neuvedeno";
+
+      document.getElementById("runningPurpose").textContent =
+        rozjetaJizda.purpose || "Bez účelu";
+
+      document.getElementById("startPanel").style.display = "none";
+      document.getElementById("runningPanel").style.display = "block";
+    };
+  
+    document.getElementById("stopTrip").onclick = () => {
+      document.getElementById("end_date").value = dnesISO();
+      document.getElementById("end_time").value = aktualniCas();
+      document.getElementById("odometer_end").value = rozjetaJizda.odometer_start;
+    
+      document.getElementById("runningPanel").style.display = "none";
+      document.getElementById("stopPanel").style.display = "block";
+    
+      prepocitej();
+    };
+  
+    document.getElementById("cancelTrip").onclick = () => {
+      document.getElementById("stopPanel").style.display = "none";
+      document.getElementById("runningPanel").style.display = "block";
+    };
+
+    document.getElementById("cancelRunningTrip").onclick = () => {
+      if (!confirm("Opravdu zrušit rozjetou jízdu?")) {
+        return;
+      }
+    
+      removeLocal("activeTrip");
+    
+      rozjetaJizda = null;
+    
+      document.getElementById("runningPanel").style.display = "none";
+      document.getElementById("stopPanel").style.display = "none";
+      document.getElementById("startPanel").style.display = "block";
+    };
+  
+    document.getElementById("saveTrip").onclick = async () => {
+      const message = document.getElementById("message");
+
+      const trip = {
+        vehicle_id: rozjetaJizda.vehicle_id,
+        trip_date: rozjetaJizda.start_date,
+        start_place: rozjetaJizda.start_place,
+        end_place: document.getElementById("end_place").value,
+        odometer_start: rozjetaJizda.odometer_start,
+        odometer_end: endKm.value,
+        note: `Start: ${rozjetaJizda.start_time}, konec: ${document.getElementById("end_time").value}`
+      };
+    
+      if (!isOnline()) {
+        addPendingTrip(trip);
+        removeLocal("activeTrip");
+      
+        message.textContent = "Jízda je uložená v zařízení. Odešle se, až budeš online.";
+      
+        setTimeout(() => {
+          window.location.href = "/historie";
+        }, 1000);
+      
+        return;
+      }
+    
+      try {
+        const data = await api("/api/trips", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify(trip)
+        });
+      
+        removeLocal("activeTrip");
+      
+        message.textContent = `Jízda uložena. Ujeto ${data.distance} km.`;
+      
+        setTimeout(() => {
+          window.location.href = "/historie";
+        }, 700);
+      } catch (e) {
+        addPendingTrip(trip);
+        removeLocal("activeTrip");
+      
+        message.textContent = "Server teď neodpověděl. Jízda je uložená v zařízení a odešle se později.";
+      
+        setTimeout(() => {
+          window.location.href = "/historie";
+        }, 1000);
+      }
+    };
+  
+    requireLogin().then(async () => {
+      await loadVehicles();
+
+      const ulozenaJizda = loadLocal("activeTrip");
+
+      if (ulozenaJizda) {
+        rozjetaJizda = ulozenaJizda;
+        document.getElementById("runningVehicle").textContent =
+          rozjetaJizda.vehicle_name;
+
+        document.getElementById("runningDate").textContent =
+          rozjetaJizda.start_date;
+
+        document.getElementById("runningTime").textContent =
+          rozjetaJizda.start_time;
+
+        document.getElementById("runningPlace").textContent =
+          rozjetaJizda.start_place || "Neuvedeno";
+
+        document.getElementById("runningPurpose").textContent =
+          rozjetaJizda.purpose || "Bez účelu";
+        document.getElementById("startPanel").style.display = "none";
+        document.getElementById("runningPanel").style.display = "block";
+        document.getElementById("stopPanel").style.display = "none";
+      }
+    });
+  </script>
+</body>
+</html>

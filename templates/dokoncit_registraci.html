@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dokončení registrace</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Dokončení registrace</h1>
+
+      <label>Heslo</label>
+      <input id="password" type="password" placeholder="alespoň 6 znaků">
+
+      <label>Heslo znovu</label>
+      <input id="password2" type="password" placeholder="zopakuj heslo">
+
+      <button id="completeBtn">Dokončit registraci</button>
+
+      <p id="message" class="muted"></p>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const registerToken = params.get("token");
+    const message = document.getElementById("message");
+
+    document.getElementById("completeBtn").onclick = async () => {
+      const password = document.getElementById("password").value;
+      const password2 = document.getElementById("password2").value;
+
+      message.textContent = "";
+
+      if (!registerToken) {
+        message.textContent = "Chybí registrační token.";
+        return;
+      }
+
+      if (password !== password2) {
+        message.textContent = "Hesla se neshodují.";
+        return;
+      }
+
+      try {
+        const data = await api("/api/complete-registration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: registerToken,
+            password: password
+          })
+        });
+
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("email", data.email);
+
+        message.textContent = data.message;
+
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 800);
+      } catch (e) {
+        message.textContent = e.message;
+      }
+    };
+  </script>
+</body>
+</html>

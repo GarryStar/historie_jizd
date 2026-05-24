@@ -1,0 +1,61 @@
+# Python
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environment
+
+venv/
+.env/
+.venv/
+
+# Environment variables
+
+.env
+
+# SQLite databáze
+
+instance/
+*.db
+*.sqlite3
+
+# Flask
+
+.flaskenv
+
+# VS Code
+
+.vscode/
+
+# PyCharm
+
+.idea/
+
+# macOS
+
+.DS_Store
+
+# Windows
+
+Thumbs.db
+
+# Logs
+
+*.log
+
+# Temporary files
+
+tmp/
+temp/
+
+# Node (kdyby ses časem pustil do frontendu)
+
+node_modules/
+
+# Build/cache
+
+dist/
+build/
+.cache/

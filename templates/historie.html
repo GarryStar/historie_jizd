@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Historie jízd</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Historie jízd</h1>
+      <div id="trips"></div>
+    </section>
+  </main>
+
+  <nav class="nav">
+    <a href="/dashboard">Domů</a>
+    <a href="/nova-jizda">Jízda</a>
+    <a href="/vozidla">Auta</a>
+    <a href="/historie" class="active">Historie</a>
+  </nav>
+
+  <script src="/static/app.js"></script>
+  <script>
+    async function loadTrips() {
+      const trips = await api("/api/trips", { headers: authHeaders() });
+      const box = document.getElementById("trips");
+      box.innerHTML = trips.length ? "" : "<p class='muted'>Zatím nemáš žádné jízdy.</p>";
+      trips.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <strong>${t.trip_date} · ${t.vehicle_name}</strong><br>
+          ${t.start_place || "—"} → ${t.end_place || "—"}<br>
+          <span class="muted">${t.distance} km · ${t.odometer_start} → ${t.odometer_end}</span><br>
+          <span class="muted">${t.purpose || "bez účelu"}</span>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    requireLogin().then(loadTrips);
+  </script>
+</body>
+</html>

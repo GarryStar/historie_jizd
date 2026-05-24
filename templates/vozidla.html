@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vozidla</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Moje vozidla</h1>
+      <div id="vehicles"></div>
+    </section>
+
+    <section class="card">
+      <h2>Přidat vozidlo</h2>
+      <label>Název</label>
+      <input id="name" placeholder="Octavia">
+      <label>SPZ</label>
+      <input id="spz" placeholder="1A2 3456">
+      <div class="row">
+        <div>
+          <label>Značka</label>
+          <input id="brand" placeholder="Škoda">
+        </div>
+        <div>
+          <label>Model</label>
+          <input id="model" placeholder="Octavia">
+        </div>
+      </div>
+      <label>Aktuální tachometr</label>
+      <input id="current_odometer" type="number" inputmode="numeric" value="0">
+      <button id="saveVehicle">Uložit vozidlo</button>
+      <p id="message" class="muted"></p>
+    </section>
+  </main>
+
+  <nav class="nav">
+    <a href="/dashboard">Domů</a>
+    <a href="/nova-jizda">Jízda</a>
+    <a href="/vozidla" class="active">Auta</a>
+    <a href="/historie">Historie</a>
+  </nav>
+
+  <script src="/static/app.js"></script>
+  <script>
+    async function loadVehicles() {
+      const list = await api("/api/vehicles", { headers: authHeaders() });
+      const box = document.getElementById("vehicles");
+      box.innerHTML = list.length ? "" : "<p class='muted'>Zatím nemáš žádné vozidlo.</p>";
+      list.forEach(v => {
+        const div = document.createElement("div");
+        div.className = "item";
+        div.innerHTML = `
+          <strong>${v.name}</strong><br>
+          <span class="muted">${v.spz || "bez SPZ"} · ${v.current_odometer || 0} km</span>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    document.getElementById("saveVehicle").onclick = async () => {
+      try {
+        await api("/api/vehicles", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            name: document.getElementById("name").value,
+            spz: document.getElementById("spz").value,
+            brand: document.getElementById("brand").value,
+            model: document.getElementById("model").value,
+            current_odometer: document.getElementById("current_odometer").value
+          })
+        });
+        document.getElementById("message").textContent = "Vozidlo uloženo.";
+        document.getElementById("name").value = "";
+        document.getElementById("spz").value = "";
+        loadVehicles();
+      } catch (e) {
+        document.getElementById("message").textContent = e.message;
+      }
+    };
+
+    requireLogin().then(loadVehicles);
+  </script>
+</body>
+</html>

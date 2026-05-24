@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Obnova hesla</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Obnova hesla</h1>
+
+      <label>Nové heslo</label>
+      <input id="password" type="password" placeholder="alespoň 6 znaků">
+
+      <label>Nové heslo znovu</label>
+      <input id="password2" type="password" placeholder="zopakuj heslo">
+
+      <button id="resetBtn">Změnit heslo</button>
+
+      <p id="message" class="muted"></p>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get("token");
+
+    document.getElementById("resetBtn").onclick = async () => {
+      const message = document.getElementById("message");
+      const password = document.getElementById("password").value;
+      const password2 = document.getElementById("password2").value;
+
+      message.textContent = "";
+
+      if (!resetToken) {
+        message.textContent = "Chybí resetovací token.";
+        return;
+      }
+
+      if (password !== password2) {
+        message.textContent = "Hesla se neshodují.";
+        return;
+      }
+
+      try {
+        const data = await api("/api/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            token: resetToken,
+            password: password
+          })
+        });
+
+        message.textContent = data.message;
+
+        setTimeout(() => {
+          window.location.href = "/";
+        }, 1200);
+      } catch (e) {
+        message.textContent = e.message;
+      }
+    };
+  </script>
+</body>
+</html>

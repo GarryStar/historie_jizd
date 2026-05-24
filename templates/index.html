@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kniha jízd</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Kniha jízd</h1>
+      <p class="muted">Přihlas se nebo si založ účet.</p>
+
+      <label>E-mail</label>
+      <input id="email" type="email" autocomplete="email" placeholder="tvoje@email.cz">
+
+      <label>Heslo</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="alespoň 6 znaků">
+
+      <button id="loginBtn">Přihlásit</button>
+      <button id="registerBtn" class="secondary">Registrovat</button>
+      <button id="forgotBtn" class="secondary" type="button">
+        Zapomenuté heslo
+      </button>
+
+      <p id="message" class="muted"></p>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+  <script>
+    const email = document.getElementById("email");
+    const password = document.getElementById("password");
+    const message = document.getElementById("message");
+
+    async function submit(mode) {
+      message.textContent = "";
+      try {
+        const data = await api(`/api/${mode}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.value, password: password.value })
+        });
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("email", data.email);
+
+        try {
+          const vehicles = await api("/api/vehicles", { headers: authHeaders() });
+          saveLocal("vehicles", vehicles);
+        
+          const trips = await api("/api/trips", { headers: authHeaders() });
+          saveLocal("trips", trips);
+        } catch (e) {
+          console.log("Data se teď nepodařilo načíst, ale přihlášení proběhlo.");
+        }
+
+        window.location.href = "/dashboard";
+      } catch (e) {
+        message.textContent = e.message;
+      }
+    }
+
+    document.getElementById("loginBtn").onclick = () => submit("login");
+    document.getElementById("registerBtn").onclick = async () => {
+      message.textContent = "";
+        
+      try {
+        const data = await api("/api/start-registration", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.value })
+        });
+      
+        message.textContent = data.message;
+      } catch (e) {
+        message.textContent = e.message;
+      }
+    };
+    document.getElementById("forgotBtn").onclick = async () => {
+      message.textContent = "";
+        
+      try {
+        const data = await api("/api/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.value })
+        });
+      
+        message.textContent = data.message;
+      } catch (e) {
+        message.textContent = e.message;
+      }
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="container">
+    <section class="card">
+      <h1>Ahoj 👋</h1>
+      <p id="userEmail" class="muted"></p>
+      <div class="grid">
+        <button onclick="window.location.href='/nova-jizda'">+ Nová jízda</button>
+        <button class="secondary" onclick="window.location.href='/vozidla'">Moje vozidla</button>
+        <button class="secondary" onclick="window.location.href='/historie'">Historie jízd</button>
+        <button class="danger" onclick="logout()">Odhlásit</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav">
+    <a href="/dashboard" class="active">Domů</a>
+    <a href="/nova-jizda">Jízda</a>
+    <a href="/vozidla">Auta</a>
+    <a href="/historie">Historie</a>
+  </nav>
+
+  <script src="/static/app.js"></script>
+  <script>
+    requireLogin().then(user => {
+      if (user) document.getElementById("userEmail").textContent = user.email;
+    });
+  </script>
+</body>
+</html>
