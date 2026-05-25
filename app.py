@@ -525,6 +525,41 @@ def vehicle_last_km(vehicle_id):
             return jsonify({"error": "Vozidlo nenalezeno."}), 404
         return jsonify({"current_odometer": row["current_odometer"] or 0})
 
+@app.route("/api/contact", methods=["POST"])
+def contact():
+    data = request.get_json() or {}
+
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    message = (data.get("message") or "").strip()
+
+    if not name or not email or not message:
+        return jsonify({"error": "Vyplň jméno, e-mail i zprávu."}), 400
+
+    if not je_platny_email(email):
+        return jsonify({"error": "Zadej platný e-mail."}), 400
+
+    posli_email(
+        MAIL_FROM,
+        "Zpráva z HistorieJízd.cz",
+        f"""
+Nová zpráva z webu HistorieJízd.cz
+
+Jméno:
+{name}
+
+E-mail:
+{email}
+
+Zpráva:
+{message}
+"""
+    )
+
+    return jsonify({
+        "success": True,
+        "message": "Zpráva byla odeslána."
+    })
 
 if __name__ == "__main__":
     init_db()
