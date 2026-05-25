@@ -263,7 +263,22 @@
     };
   
     async function detectCity(inputId) {
+      const input = document.getElementById(inputId);
+        
+      if (!input) {
+        console.log("Input nenalezen:", inputId);
+        return;
+      }
+    
+      input.placeholder = "Načítám město z GPS...";
+    
+      if (!navigator.onLine) {
+        input.placeholder = "Zadej město ručně";
+        return;
+      }
+    
       if (!navigator.geolocation) {
+        input.placeholder = "GPS není dostupná";
         return;
       }
     
@@ -273,28 +288,43 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
           
+            console.log("GPS:", lat, lon);
+          
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=cs`
             );
           
             const data = await response.json();
+            console.log("Nominatim:", data);
+          
+            const adresa = data.address || {};
           
             const city =
-              data.address.city ||
-              data.address.town ||
-              data.address.village ||
-              data.address.municipality ||
+              adresa.city ||
+              adresa.town ||
+              adresa.village ||
+              adresa.municipality ||
+              adresa.suburb ||
               "";
           
             if (city) {
-              document.getElementById(inputId).value = city;
+              input.value = city;
+            } else {
+              input.placeholder = "Město nenalezeno, zadej ručně";
             }
           } catch (e) {
-            console.log("GPS město nenalezeno");
+            console.log("Chyba při načítání města:", e);
+            input.placeholder = "Město se nenačetlo, zadej ručně";
           }
         },
-        () => {
-          console.log("GPS nepovolena");
+        (error) => {
+          console.log("GPS chyba:", error);
+          input.placeholder = "Povol GPS nebo zadej ručně";
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 300000
         }
       );
     }
