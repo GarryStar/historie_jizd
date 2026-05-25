@@ -3,4 +3,4 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install flask bcrypt python-dotenv itsdangerous
 pip freeze > requirements.txt
-sudo systemctl restart rosari
+sudo systemctl restart historie_jizd
