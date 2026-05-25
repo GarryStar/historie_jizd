@@ -146,7 +146,13 @@
     document.getElementById("start_date").value = dnesISO();
     document.getElementById("start_time").value = aktualniCas();
   
-    document.getElementById("startTrip").onclick = () => {
+    document.getElementById("startTrip").onclick = async () => {
+      const startPlaceInput = document.getElementById("start_place");
+
+      if (!startPlaceInput.value.trim()) {
+        await detectCity("start_place");
+      }
+
       rozjetaJizda = {
         vehicle_id: vehicleSelect.value,
         vehicle_name: vehicleSelect.options[vehicleSelect.selectedIndex].textContent,
@@ -154,7 +160,7 @@
         start_date: document.getElementById("start_date").value,
         start_time: document.getElementById("start_time").value,
 
-        start_place: document.getElementById("start_place").value,
+        start_place: startPlaceInput.value.trim(),
 
         purpose: document.getElementById("purpose").value,
 
@@ -178,15 +184,15 @@
       document.getElementById("runningPanel").style.display = "block";
     };
   
-    document.getElementById("stopTrip").onclick = () => {
+    document.getElementById("stopTrip").onclick = async () => {
       document.getElementById("end_date").value = dnesISO();
       document.getElementById("end_time").value = aktualniCas();
       document.getElementById("odometer_end").value = rozjetaJizda.odometer_start;
-    
-      detectCity("end_place");
 
       document.getElementById("runningPanel").style.display = "none";
       document.getElementById("stopPanel").style.display = "block";
+
+      await detectCity("end_place");
     
       prepocitej();
     };
@@ -262,71 +268,106 @@
       }
     };
   
+    function getPosition() {
+      return new Promise((resolve, reject) => {
+        if (!window.isSecureContext) {
+          reject(new Error("Stránka není v bezpečném kontextu HTTPS."));
+          return;
+        }
+
+        if (!navigator.geolocation) {
+          reject(new Error("Prohlížeč nepodporuje GPS."));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 300000
+        });
+      });
+    }
+
+    function vyberMestoZAdresy(adresa) {
+      return (
+        adresa.city ||
+        adresa.town ||
+        adresa.village ||
+        adresa.municipality ||
+        adresa.suburb ||
+        adresa.county ||
+        ""
+      );
+    }
+
     async function detectCity(inputId) {
       const input = document.getElementById(inputId);
-        
+
       if (!input) {
         console.log("Input nenalezen:", inputId);
-        return;
+        return "";
       }
-    
+
       input.placeholder = "Načítám město z GPS...";
-    
+
       if (!navigator.onLine) {
-        input.placeholder = "Zadej město ručně";
-        return;
+        input.placeholder = "Jsi offline, zadej město ručně";
+        return "";
       }
-    
-      if (!navigator.geolocation) {
-        input.placeholder = "GPS není dostupná";
-        return;
-      }
-    
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-          
-            console.log("GPS:", lat, lon);
-          
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=cs`
-            );
-          
-            const data = await response.json();
-            console.log("Nominatim:", data);
-          
-            const adresa = data.address || {};
-          
-            const city =
-              adresa.city ||
-              adresa.town ||
-              adresa.village ||
-              adresa.municipality ||
-              adresa.suburb ||
-              "";
-          
-            if (city) {
-              input.value = city;
-            } else {
-              input.placeholder = "Město nenalezeno, zadej ručně";
-            }
-          } catch (e) {
-            console.log("Chyba při načítání města:", e);
-            input.placeholder = "Město se nenačetlo, zadej ručně";
-          }
-        },
-        (error) => {
-          console.log("GPS chyba:", error);
-          input.placeholder = "Povol GPS nebo zadej ručně";
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 5000,
-          maximumAge: 300000
+
+      try {
+        console.log("GPS debug", {
+          secure: window.isSecureContext,
+          geolocation: !!navigator.geolocation,
+          online: navigator.onLine,
+          protocol: window.location.protocol,
+          host: window.location.host
+        });
+
+        const position = await getPosition();
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+
+        console.log("GPS pozice:", lat, lon);
+
+        const url =
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&accept-language=cs&zoom=10&addressdetails=1`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+          throw new Error(`Nominatim HTTP ${response.status}`);
         }
-      );
+
+        const data = await response.json();
+        console.log("Nominatim odpověď:", data);
+
+        const adresa = data.address || {};
+        const city = vyberMestoZAdresy(adresa);
+
+        if (city) {
+          input.value = city;
+          input.placeholder = "";
+          return city;
+        }
+
+        input.placeholder = "Město nenalezeno, zadej ručně";
+        return "";
+      } catch (error) {
+        console.log("GPS / město chyba:", error.code, error.message, error);
+
+        if (error.code === 1) {
+          input.placeholder = "GPS je zamítnutá, povol polohu";
+        } else if (error.code === 2) {
+          input.placeholder = "GPS pozice není dostupná";
+        } else if (error.code === 3) {
+          input.placeholder = "GPS vypršela, zadej město ručně";
+        } else {
+          input.placeholder = "Město se nenačetlo, zadej ručně";
+        }
+
+        return "";
+      }
     }
 
     requireLogin().then(async () => {
