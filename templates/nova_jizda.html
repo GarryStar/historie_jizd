@@ -183,6 +183,8 @@
       document.getElementById("end_time").value = aktualniCas();
       document.getElementById("odometer_end").value = rozjetaJizda.odometer_start;
     
+      detectCity("end_place");
+
       document.getElementById("runningPanel").style.display = "none";
       document.getElementById("stopPanel").style.display = "block";
     
@@ -192,7 +194,6 @@
     document.getElementById("cancelTrip").onclick = () => {
       document.getElementById("stopPanel").style.display = "none";
       document.getElementById("runningPanel").style.display = "block";
-      detectCity("end_place");
     };
 
     document.getElementById("cancelRunningTrip").onclick = () => {
@@ -282,6 +283,7 @@
               data.address.city ||
               data.address.town ||
               data.address.village ||
+              data.address.municipality ||
               "";
           
             if (city) {
