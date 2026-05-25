@@ -192,6 +192,7 @@
     document.getElementById("cancelTrip").onclick = () => {
       document.getElementById("stopPanel").style.display = "none";
       document.getElementById("runningPanel").style.display = "block";
+      detectCity("end_place");
     };
 
     document.getElementById("cancelRunningTrip").onclick = () => {
@@ -260,8 +261,45 @@
       }
     };
   
+    async function detectCity(inputId) {
+      if (!navigator.geolocation) {
+        return;
+      }
+    
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+          
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
+            );
+          
+            const data = await response.json();
+          
+            const city =
+              data.address.city ||
+              data.address.town ||
+              data.address.village ||
+              "";
+          
+            if (city) {
+              document.getElementById(inputId).value = city;
+            }
+          } catch (e) {
+            console.log("GPS město nenalezeno");
+          }
+        },
+        () => {
+          console.log("GPS nepovolena");
+        }
+      );
+    }
+
     requireLogin().then(async () => {
       await loadVehicles();
+      detectCity("start_place");
 
       const ulozenaJizda = loadLocal("activeTrip");
 
