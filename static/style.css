@@ -76,11 +76,17 @@ button.danger {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+
   position: sticky;
-  bottom: 0;
+  top: 0;
+
   background: rgba(15, 23, 42, .95);
+
   padding: 10px;
-  border-top: 1px solid var(--border);
+
+  border-bottom: 1px solid var(--border);
+
+  z-index: 1000;
 }
 
 .nav a {

@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+
+  <nav class="nav">
+    <a href="/dashboard">Domů</a>
+    <a href="/nova-jizda" class="active">Jízda</a>
+    <a href="/vozidla">Auta</a>
+    <a href="/historie">Historie</a>
+  </nav>
+
   <main class="container">
     <section class="card">
       <h1>Nová jízda</h1>
@@ -86,13 +94,6 @@
       </div>
     </section>
   </main>
-
-  <nav class="nav">
-    <a href="/dashboard">Domů</a>
-    <a href="/nova-jizda" class="active">Jízda</a>
-    <a href="/vozidla">Auta</a>
-    <a href="/historie">Historie</a>
-  </nav>
 
   <script src="/static/app.js"></script>
   <script>
@@ -224,6 +225,7 @@
         trip_date: rozjetaJizda.start_date,
         start_place: rozjetaJizda.start_place,
         end_place: document.getElementById("end_place").value,
+        purpose: rozjetaJizda.purpose,
         odometer_start: rozjetaJizda.odometer_start,
         odometer_end: endKm.value,
         note: `Start: ${rozjetaJizda.start_time}, konec: ${document.getElementById("end_time").value}`

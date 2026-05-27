@@ -7,12 +7,6 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <main class="container">
-    <section class="card">
-      <h1>Historie jízd</h1>
-      <div id="trips"></div>
-    </section>
-  </main>
 
   <nav class="nav">
     <a href="/dashboard">Domů</a>
@@ -20,6 +14,13 @@
     <a href="/vozidla">Auta</a>
     <a href="/historie" class="active">Historie</a>
   </nav>
+
+  <main class="container">
+    <section class="card">
+      <h1>Historie jízd</h1>
+      <div id="trips"></div>
+    </section>
+  </main>
 
   <script src="/static/app.js"></script>
   <script>
@@ -32,9 +33,20 @@
         div.className = "item";
         div.innerHTML = `
           <strong>${t.trip_date} · ${t.vehicle_name}</strong><br>
+
+          <span class="muted">
+            ${t.note || ""}
+          </span><br>
+        
           ${t.start_place || "—"} → ${t.end_place || "—"}<br>
-          <span class="muted">${t.distance} km · ${t.odometer_start} → ${t.odometer_end}</span><br>
-          <span class="muted">${t.purpose || "bez účelu"}</span>
+        
+          <span class="muted">
+            ${t.distance} km · ${t.odometer_start} → ${t.odometer_end}
+          </span><br>
+        
+          <span class="muted">
+            ${t.purpose || "bez účelu"}
+          </span>
         `;
         box.appendChild(div);
       });
